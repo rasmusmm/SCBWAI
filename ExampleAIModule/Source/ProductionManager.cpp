@@ -1,3 +1,3 @@
 #include "ProductionManager.h"
 
-using namespace ExampleAIModule;
+using namespace ExampleAI;

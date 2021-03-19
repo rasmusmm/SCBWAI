@@ -1,10 +1,10 @@
 #pragma once
 #include "Common.h"
 
-namespace ExampleAIModule
+namespace ExampleAI
 {
 	class ProductionManager
 	{
-		std::list<BWAPI::UnitType> buildOrder;
+		//std::list<BWAPI::UnitType> buildOrder;
 	};
 }

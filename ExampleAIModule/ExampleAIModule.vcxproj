@@ -91,17 +91,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Common.cpp" />
-    <ClCompile Include="Metatype.cpp" />
-    <ClCompile Include="ProductionManager.cpp" />
+    <ClCompile Include="Source\Common.cpp" />
     <ClCompile Include="Source\Dll.cpp" />
     <ClCompile Include="Source\ExampleAIModule.cpp" />
+    <ClCompile Include="Source\Metatype.cpp" />
+    <ClCompile Include="Source\ProductionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Metatype.h" />
-    <ClInclude Include="ProductionManager.h" />
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\ExampleAIModule.h" />
+    <ClInclude Include="Source\Metatype.h" />
+    <ClInclude Include="Source\ProductionManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BWAPILIB\BWAPILIB.vcxproj">

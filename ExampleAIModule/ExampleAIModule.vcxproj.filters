@@ -2,28 +2,16 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Source\Dll.cpp" />
-    <ClCompile Include="Common.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="ProductionManager.cpp">
-      <Filter>macro</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ExampleAIModule.cpp" />
-    <ClCompile Include="Metatype.cpp">
-      <Filter>macro</Filter>
-    </ClCompile>
+    <ClCompile Include="Source\Common.cpp" />
+    <ClCompile Include="Source\Metatype.cpp" />
+    <ClCompile Include="Source\ProductionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="ProductionManager.h">
-      <Filter>macro</Filter>
-    </ClInclude>
     <ClInclude Include="Source\ExampleAIModule.h" />
-    <ClInclude Include="Metatype.h">
-      <Filter>macro</Filter>
-    </ClInclude>
+    <ClInclude Include="Source\Common.h" />
+    <ClInclude Include="Source\Metatype.h" />
+    <ClInclude Include="Source\ProductionManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="macro">

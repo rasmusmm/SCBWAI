@@ -1,20 +1,29 @@
 #include "ExampleAIModule.h"
 #include <iostream>
-#include <BWAPI.h>
-#include "MetaType.h"
-//#include "ProductionManager.h"
+#include "Metatype.h"
 using namespace BWAPI;
 using namespace Filter;
+using namespace ExampleAI;
 
 void ExampleAIModule::onStart()
 {
+	poolbuilt = false;
+	buildCommandGiven = false;
 	// Hello World!
-	Broodwar->sendText("Hello world!");
-	buildOrder.push_back(UnitTypes::Zerg_Spawning_Pool);
+	Broodwar->sendText("Hello!");
+	buildOrder = twoHatch;
+	Broodwar << "Build order is:" << std::endl;
+	for (auto & i : buildOrder) {
+		Broodwar << i << std::endl;
+	}
+	Broodwar << "Accessing hive. BO size: " << buildOrder.size() << "is next item a building:" << buildOrder.front().isBuilding() << std::endl;
+	BWAPI::UnitType fillerUnit = BWAPI::UnitTypes::Zerg_Zergling;
+	for (auto & bi : buildOrder) {
+		reservedMinerals += bi.mineralPrice();
+	}
 	// Print the map name.
 	// BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
 	Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
-
 	// Enable the UserInput flag, which allows us to control the bot and type messages.
 	Broodwar->enableFlag(Flag::UserInput);
 
@@ -50,7 +59,7 @@ void ExampleAIModule::onStart()
 			Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
 	}
 
-	poolbuilt = false;
+	
 }
 
 void ExampleAIModule::onEnd(bool isWinner)
@@ -61,15 +70,52 @@ void ExampleAIModule::onEnd(bool isWinner)
 		// Log your win here!
 	}
 }
-
+inline const char * const BoolToString(bool b)
+{
+	return b ? "true" : "false";
+}
 void ExampleAIModule::onFrame()
 {
 	// Called once every game frame
+	//if we are in the inital build order, follow it.
+	if (buildOrder.size()>0) {
+		if (Broodwar->self()->minerals() >= (buildOrder.front().mineralPrice()) && !buildOrder.front().isBuilding() && !buildCommandGiven) {
+		
+			for (auto &hatch : Broodwar->self()->getUnits()) {
+				if (!hatch->getType() == BWAPI::UnitTypes::Zerg_Hatchery){
+					continue;
+				}
+			
+				Unit builder = hatch->getClosestUnit(GetType == buildOrder.front().whatBuilds().first &&
+					(IsIdle || IsGatheringMinerals) &&
+					IsOwned);
+				if (builder) {
+					builder->train(buildOrder.front());
+					buildCommandGiven = true;
+				}
+			}
+		}
+	}
+	else {
+		for (auto &hatch : Broodwar->self()->getUnits()) {
+			if (!hatch->getType() == BWAPI::UnitTypes::Zerg_Hatchery) {
+				continue;
+			}
 
+			Unit builder = hatch->getClosestUnit(GetType == UnitTypes::Zerg_Zergling.whatBuilds().first &&
+				(IsIdle || IsGatheringMinerals) &&
+				IsOwned);
+			if (builder) {
+				builder->train(buildOrder.front());
+				buildCommandGiven = true;
+			}
+		}
+	}
+	
 	// Display the game frame rate as text in the upper left area of the screen
 	Broodwar->drawTextScreen(200, 0, "FPS: %d", Broodwar->getFPS());
-	Broodwar->drawTextScreen(200, 20, "Average FPS: %f", Broodwar->getAverageFPS());
-
+	Broodwar->drawTextScreen(200, 40, "Average FPS: %f", Broodwar->getAverageFPS());
+	Broodwar->drawTextScreen(200, 20, "Build command given %s", BoolToString(buildCommandGiven));
 	// Return if the game is a replay or is paused
 	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
 		return;
@@ -78,7 +124,7 @@ void ExampleAIModule::onFrame()
 	// Latency frames are the number of frames before commands are processed.
 	if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
 		return;
-
+	
 	// Iterate through all the units that we own
 	for (auto &u : Broodwar->self()->getUnits())
 	{
@@ -101,7 +147,7 @@ void ExampleAIModule::onFrame()
 
 		// Finally make the unit do some stuff!
 
-		if ((u->getType() == UnitTypes::Zerg_Zergling) && u->isIdle())
+		if ((u->getType() == UnitTypes::Zerg_Zergling))
 		{
 			Unit closestEnemy = NULL;
 			for (auto &e : Broodwar->enemy()->getUnits())
@@ -117,15 +163,14 @@ void ExampleAIModule::onFrame()
 		// If the unit is a worker unit
 		if (u->getType().isWorker())
 		{
-			if ((!buildOrder.size() == 0) && (Broodwar->self()->minerals() >= buildOrder.front().mineralPrice()) && buildOrder.front())
+			if (!(buildOrder.size()== 0) && (Broodwar->self()->minerals() >= (buildOrder.front().mineralPrice())) && buildOrder.front().isBuilding() && !buildCommandGiven)
 			{
 				//find a location for spawning pool and construct it
 				TilePosition buildPosition = Broodwar->getBuildLocation(buildOrder.front(), u->getTilePosition());
-				u->build(buildOrder.front(), buildPosition);
-				poolbuilt = true;
-				buildOrder.pop_front();
+				u->build(buildOrder.front(),buildPosition);
+				buildCommandGiven = true;
+				//buildOrder.erase(buildOrder.begin());
 			}
-
 
 			// if our worker is idle
 			if (u->isIdle())
@@ -149,12 +194,19 @@ void ExampleAIModule::onFrame()
 			} // closure: if idle
 
 		}
+		/*
 		else if (u->getType().isResourceDepot()) // A resource depot is a Command Center, Nexus, or Hatchery
 		{
-
+			
 			// Order the depot to construct more workers! But only when it is idle.
-			if (poolbuilt && (u->isIdle() && !u->train(UnitTypes::Zerg_Zergling)))
+			if (!(buildOrder.size() == 0) && (u->isIdle()) && !buildCommandGiven && !u->train(buildOrder.front())&& !(buildOrder.front().isBuilding())) {
+				//buildOrder.erase(buildOrder.begin());
+				buildCommandGiven = true;
+				
+			}
+			if ((buildOrder.size() == 0) && (u->isIdle()) && !u->train(UnitTypes::Zerg_Zergling))
 			{
+				
 				// If that fails, draw the error at the location so that you can visibly see what went wrong!
 				// However, drawing the error once will only appear for a single frame
 				// so create an event that keeps it on the screen for some frames
@@ -169,6 +221,7 @@ void ExampleAIModule::onFrame()
 				static int lastChecked = 0;
 
 				// If we are supply blocked and haven't tried constructing more recently
+				
 				if (lastErr == Errors::Insufficient_Supply &&
 					lastChecked + 400 < Broodwar->getFrameCount() &&
 					Broodwar->self()->incompleteUnitCount(supplyProviderType) == 0)
@@ -208,10 +261,11 @@ void ExampleAIModule::onFrame()
 						}
 					} // closure: supplyBuilder is valid
 				} // closure: insufficient supply
+				
 			} // closure: failed to train idle unit
 
 		}
-
+		*/
 	} // closure: unit iterator
 }
 
@@ -268,6 +322,7 @@ void ExampleAIModule::onUnitEvade(BWAPI::Unit unit)
 
 void ExampleAIModule::onUnitShow(BWAPI::Unit unit)
 {
+	
 }
 
 void ExampleAIModule::onUnitHide(BWAPI::Unit unit)
@@ -276,6 +331,9 @@ void ExampleAIModule::onUnitHide(BWAPI::Unit unit)
 
 void ExampleAIModule::onUnitCreate(BWAPI::Unit unit)
 {
+	if (IsOwned(unit)) {
+		Broodwar << "(create) unit is" << unit->getType()<< std::endl;
+	}
 	if (Broodwar->isReplay())
 	{
 		// if we are in a replay, then we will print out the build order of the structures
@@ -287,6 +345,23 @@ void ExampleAIModule::onUnitCreate(BWAPI::Unit unit)
 			Broodwar->sendText("%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
 		}
 	}
+	
+	//Broodwar << "Want to create " << buildOrder.front() << " but created: " << unit->getType() << std::endl;
+	/*
+	if (Broodwar->getFrameCount()>400){
+		if (unit->getType() == buildOrder.front() && IsOwned(unit)) {
+			Broodwar << "(create) Build order is:" << std::endl;
+			for (auto & i : buildOrder) {
+				Broodwar << i << std::endl;
+			}
+			//Broodwar << "Building " << buildOrder.front() << "! (from create)" << std::endl;
+			buildOrder.erase(buildOrder.begin(), buildOrder.begin()+1);
+			//buildOrder.erase(remove(buildOrder.begin(), buildOrder.end(), unit->getType()), buildOrder.end());
+			//Broodwar << "Next item: " << buildOrder.front() << "! (from create)" << std::endl;
+			buildCommandGiven = false;
+		}
+	}
+	*/
 }
 
 void ExampleAIModule::onUnitDestroy(BWAPI::Unit unit)
@@ -295,6 +370,10 @@ void ExampleAIModule::onUnitDestroy(BWAPI::Unit unit)
 
 void ExampleAIModule::onUnitMorph(BWAPI::Unit unit)
 {
+	if (IsOwned(unit)) {
+		Broodwar << "(create) unit is" << unit->getType() << std::endl;
+	}
+	//Broodwar << unit->getType() << "just morphed" << std::endl;
 	if (Broodwar->isReplay())
 	{
 		// if we are in a replay, then we will print out the build order of the structures
@@ -306,6 +385,21 @@ void ExampleAIModule::onUnitMorph(BWAPI::Unit unit)
 			Broodwar->sendText("%.2d:%.2d: %s morphs a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
 		}
 	}
+	//Broodwar << "Want to morph " << buildOrder.front() << " but morph: " << unit->getType() << std::endl;
+	
+	if (unit->getType() == buildOrder.front() && IsOwned(unit)) {
+		
+		//Broodwar << "Building " << buildOrder.front() << "! (from morph)" << std::endl;
+		buildOrder.erase(buildOrder.begin(), buildOrder.begin()+1);
+		Broodwar << "(morph) New build order is:" << std::endl;
+		for (auto & i : buildOrder) {
+			Broodwar << i << std::endl;
+		}
+		//buildOrder.erase(remove(buildOrder.begin(), buildOrder.end(), unit->getType()), buildOrder.end());
+		//Broodwar << "Next item: " << buildOrder.front() << "! (from morph)" << std::endl;
+		buildCommandGiven = false;
+	}
+	
 }
 
 void ExampleAIModule::onUnitRenegade(BWAPI::Unit unit)

@@ -1,6 +1,6 @@
 #include "MetaType.h"
 
-using namespace ExampleAIModule;
+using namespace ExampleAI;
 
 MetaType::MetaType()
 {
@@ -175,7 +175,7 @@ std::string MetaType::getName() const
 	}
 	else
 	{
-		UAB_ASSERT(false, "MetaType not found");
+		//UAB_ASSERT(false, "MetaType not found");
 		return "LOL";
 	}
 }

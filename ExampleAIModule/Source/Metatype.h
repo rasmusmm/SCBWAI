@@ -2,7 +2,7 @@
 
 #include "Common.h"
 
-namespace ExampleAIModule
+namespace ExampleAI
 {
 
 	namespace MetaTypes
